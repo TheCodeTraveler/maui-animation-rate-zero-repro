@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Runs each leg on its own and checks the exit code AND the marker line, so a leg that did not run cannot pass.
 set -u
+dotnet build tests || exit 1
 export RESULTS_DIR="$PWD/results"
 rm -rf results
 mkdir -p results
@@ -20,9 +21,9 @@ run_leg() {
   echo "| $name | $expected | $observed | $result |" >> results/summary.md
 }
 
-run_leg bug     Bug_RateZero     "MARKER BUG rate=0 threw System.DivideByZeroException" "rate 0 accepted, then DivideByZeroException from Tweener.Step on the first ticker frame"
-run_leg control Control_RateOne  "MARKER CONTROL rate=1 clean"                           "rate 1 runs a frame without any exception"
-run_leg fix     Fix_RateZero     "MARKER FIX clamped rate clean"                         "rate 0 clamped to 1 before Animate runs a frame cleanly"
+run_leg bug     Bug_RateZero     "MARKER BUG rate=0 threw System.DivideByZeroException valueUpdates=1" "rate 0 accepted, then DivideByZeroException from Tweener.Step on the first ticker frame"
+run_leg control Control_RateOne  "MARKER CONTROL rate=1 clean valueUpdates=2"                         "rate 1 runs a frame without any exception"
+run_leg fix     Fix_RateZero     "MARKER FIX clamped rate clean valueUpdates=2"                         "rate 0 clamped to 1 before Animate runs a frame cleanly"
 
 cat results/summary.md
 exit $fail

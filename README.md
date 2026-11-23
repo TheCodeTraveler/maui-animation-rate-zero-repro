@@ -17,7 +17,8 @@ The exception cannot be caught around `Commit`: it is thrown later from the plat
 
 ## Versions
 
-- Microsoft.Maui.Controls 11.0.10, .NET SDK 11.0.100, net11.0, ubuntu-latest.
+- Microsoft.Maui.Controls 11.0.10, .NET SDK 11.0.100, net11.0 (managed legs) and net11.0-android (emulator job), ubuntu-24.04 runners, API 36 x86_64 emulator.
+- Actions pinned to the same SHAs as dotnet/maui's device-tests.yml: checkout v7.0.1, setup-dotnet v6.1.0, upload-artifact v7.
 
 ## Legs
 
@@ -27,7 +28,9 @@ The exception cannot be caught around `Commit`: it is thrown later from the plat
 | control | same with `rate: 1` | no exception |
 | fix | rate 0 clamped to 1 before calling `Animate` | no exception |
 
-- The tests drive `AnimationManager` with a manual `ITicker`, the same code path the platform tickers use, so no device is needed. Platform runs (iOS 27 simulator and Android 36 emulator, animations enabled) crashed the same way when the maintainer's verifier ran them; this repo does not repeat them.
+- The tests drive `AnimationManager` with a manual `ITicker`, the same code path the platform tickers use, so no device is needed.
+- The `android` job runs the real crash: one APK (`app/C04Repro`) commits `new Animation(...).Commit(box, "Rate", rate: N, length: 1000)` inside `try/catch` on launch and gets N from `am start --ei rate N`. Rate 0: logcat shows `FATAL EXCEPTION`, `DivideByZeroException` and `Tweener.Step`, never `CAUGHT` or `SURVIVED`, and the process is gone. Rate 1: `SURVIVED` is logged and the process is alive. A cell fails when `STARTED` is missing. Logcat is uploaded as the `results-android` artifact.
+- The managed `bug` leg writes the exception to `results/bug-exception.txt` and the job summary shows it.
 - Each leg fails unless its test passed and its marker line is in `results/markers.txt`. The workflow is green only when all three legs are OK.
 - The recommended fix (`Rate = Math.Max(rate, 1u)` in the `Tweener` constructor) is internal, so it cannot be applied from user code. The fix leg shows the equivalent clamp at the call site.
 

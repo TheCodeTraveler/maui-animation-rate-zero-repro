@@ -65,23 +65,31 @@ public class RateZeroTests
 		}
 	}
 
-	// xunit v3 swallows stdout, so the markers go to a file that the CI script asserts on.
-	static void WriteMarker(string line)
+	// A passing test prints nothing, so markers and the exception text go to files that the CI script asserts on and shows.
+	static void WriteMarker(string line) => AppendResultFile("markers.txt", line + Environment.NewLine);
+
+	static void WriteResultFile(string fileName, string content) => File.WriteAllText(ResultPath(fileName), content);
+
+	static void AppendResultFile(string fileName, string content) => File.AppendAllText(ResultPath(fileName), content);
+
+	static string ResultPath(string fileName)
 	{
 		var dir = Environment.GetEnvironmentVariable("RESULTS_DIR") ?? "results";
 		Directory.CreateDirectory(dir);
-		File.AppendAllText(Path.Combine(dir, "markers.txt"), line + Environment.NewLine);
+		return Path.Combine(dir, fileName);
 	}
 
 	[Fact]
 	public void Bug_RateZero_ThrowsDivideByZeroFromTickerCallback()
 	{
-		var (thrown, _) = AnimateAndFireOneFrame(rate: 0);
+		var (thrown, valueUpdates) = AnimateAndFireOneFrame(rate: 0);
 
 		Assert.NotNull(thrown);
 		Assert.IsType<DivideByZeroException>(thrown);
 		Assert.Contains("Microsoft.Maui.Controls.Tweener.Step", thrown.StackTrace);
-		WriteMarker($"MARKER BUG rate=0 threw {thrown.GetType().FullName}");
+		Assert.Equal(1, valueUpdates);
+		WriteResultFile("bug-exception.txt", thrown.ToString());
+		WriteMarker($"MARKER BUG rate=0 threw {thrown.GetType().FullName} valueUpdates={valueUpdates}");
 	}
 
 	[Fact]
@@ -90,8 +98,8 @@ public class RateZeroTests
 		var (thrown, valueUpdates) = AnimateAndFireOneFrame(rate: 1);
 
 		Assert.Null(thrown);
-		Assert.True(valueUpdates >= 1, "The animation should have produced at least the initial value.");
-		WriteMarker($"MARKER CONTROL rate=1 clean");
+		Assert.Equal(2, valueUpdates);
+		WriteMarker($"MARKER CONTROL rate=1 clean valueUpdates={valueUpdates}");
 	}
 
 	[Fact]
@@ -100,9 +108,10 @@ public class RateZeroTests
 		// The recommended fix (Rate = Math.Max(rate, 1u) in Tweener's constructor) cannot be applied from user code,
 		// because Tweener is internal. The caller-side equivalent is clamping before calling Animate.
 		const uint requestedRate = 0;
-		var (thrown, _) = AnimateAndFireOneFrame(rate: Math.Max(requestedRate, 1u));
+		var (thrown, valueUpdates) = AnimateAndFireOneFrame(rate: Math.Max(requestedRate, 1u));
 
 		Assert.Null(thrown);
-		WriteMarker($"MARKER FIX clamped rate clean");
+		Assert.Equal(2, valueUpdates);
+		WriteMarker($"MARKER FIX clamped rate clean valueUpdates={valueUpdates}");
 	}
 }
