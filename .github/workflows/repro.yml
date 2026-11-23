@@ -1,0 +1,43 @@
+name: repro
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  rate-zero:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET SDK from global.json
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore tests
+        run: dotnet restore tests
+
+      - name: Build tests
+        run: dotnet build tests --no-restore
+
+      - name: Run bug, control and fix legs
+        run: ./run-legs.sh
+
+      - name: Assert every leg ran and matched
+        if: always()
+        run: |
+          test -f results/summary.md || { echo "No summary: legs did not run"; exit 1; }
+          test "$(grep -c '| OK |' results/summary.md)" -eq 3 || { echo "Expected 3 OK legs"; exit 1; }
+
+      - name: Write job summary
+        if: always()
+        run: |
+          { echo "## Animation rate 0 repro (Microsoft.Maui.Controls 11.0.10)"; cat results/summary.md 2>/dev/null || echo "No results produced"; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results
+          path: results/
