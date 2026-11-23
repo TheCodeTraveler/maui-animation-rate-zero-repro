@@ -2,7 +2,7 @@ using Android.Util;
 
 namespace C04Repro;
 
-// Commits one animation with the rate chosen by `am start --ei rate <N>`. Every line carries the "C04" tag.
+// Every log line carries the "C04" tag; run-cells.sh filters on it.
 public class ProbePage : ContentPage
 {
 	const string Tag = "C04";
@@ -25,7 +25,7 @@ public class ProbePage : ContentPage
 		}
 		catch (Exception ex)
 		{
-			Log.Error(Tag, $"C04 CAUGHT {ex.GetType().FullName}: {ex.Message}");
+			Log.Error(Tag, $"C04 CAUGHT {ex}");
 		}
 
 		await Task.Delay(2000);

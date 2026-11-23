@@ -148,6 +148,11 @@ jobs:
             echo '```'
             head -c 6000 artifacts/android/bug/crash.txt 2>/dev/null || echo "No crash log"
             echo '```'
+            echo
+            echo "### Bug cell: what the app's try/catch logged"
+            echo '```'
+            grep 'C04 CAUGHT' artifacts/android/bug/logcat.txt 2>/dev/null | head -c 4000 || true
+            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           exit $code
 

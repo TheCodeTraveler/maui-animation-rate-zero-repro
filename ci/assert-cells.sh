@@ -12,13 +12,13 @@ check_cell() {
     if ! grep -q 'C04 STARTED' "$log" 2>/dev/null; then
         observed='STARTED missing: the app did not run'; result=FAIL
     elif [ "$name" = bug ]; then
-        grep -q 'FATAL EXCEPTION' "$log" || result=FAIL
-        grep -q 'DivideByZeroException' "$log" || result=FAIL
-        grep -q 'Tweener.Step' "$log" || result=FAIL
-        grep -q 'C04 CAUGHT' "$log" && result=FAIL
+        local crash="$dir/$1/crash.txt"
+        grep -q 'FATAL EXCEPTION' "$crash" 2>/dev/null || result=FAIL
+        grep -q 'DivideByZeroException' "$crash" 2>/dev/null || result=FAIL
+        grep -q 'Tweener.Step' "$crash" 2>/dev/null || result=FAIL
         grep -q 'C04 SURVIVED' "$log" && result=FAIL
         test -s "$pid_file" && result=FAIL
-        observed="FATAL=$(grep -c 'FATAL EXCEPTION' "$log") DivideByZero=$(grep -c 'DivideByZeroException' "$log") Tweener.Step=$(grep -c 'Tweener.Step' "$log") CAUGHT=$(grep -c 'C04 CAUGHT' "$log") SURVIVED=$(grep -c 'C04 SURVIVED' "$log") pid='$(cat "$pid_file" 2>/dev/null)'"
+        observed="crash.txt: FATAL=$(grep -c 'FATAL EXCEPTION' "$crash" 2>/dev/null) DivideByZero=$(grep -c 'DivideByZeroException' "$crash" 2>/dev/null) Tweener.Step=$(grep -c 'Tweener.Step' "$crash" 2>/dev/null); logcat: CAUGHT=$(grep -c 'C04 CAUGHT' "$log") SURVIVED=$(grep -c 'C04 SURVIVED' "$log") pid='$(cat "$pid_file" 2>/dev/null)'"
     else
         grep -q 'C04 SURVIVED' "$log" || result=FAIL
         grep -q 'FATAL EXCEPTION' "$log" && result=FAIL
@@ -29,6 +29,6 @@ check_cell() {
     echo "| $name | $expected | $observed | $result |"
 }
 
-check_cell bug 'rate 0: FATAL EXCEPTION, DivideByZeroException in Tweener.Step, no CAUGHT, no SURVIVED, process gone'
+check_cell bug 'rate 0: FATAL EXCEPTION, DivideByZeroException in Tweener.Step, crash buffer has all three, no SURVIVED, process gone (CAUGHT is only counted)'
 check_cell control 'rate 1: SURVIVED logged, process alive'
 exit $failed

@@ -8,7 +8,7 @@ namespace RateZero.Tests;
 
 public class RateZeroTests
 {
-	// Stands in for CADisplayLink / ValueAnimator / CompositionTarget.Rendering: the test fires frames by hand.
+	// Models CADisplayLink and CompositionTarget.Rendering, where the first frame arrives after Commit returns. Android's ValueAnimator runs it inside Commit.
 	sealed class ManualTicker : ITicker
 	{
 		public bool IsRunning { get; private set; }
@@ -38,7 +38,6 @@ public class RateZeroTests
 		public IDispatcher GetForCurrentThread() => new ImmediateDispatcher();
 	}
 
-	// Fires exactly one frame by hand; the exception (if any) is captured, not rethrown.
 	static (Exception Thrown, int ValueUpdates) AnimateAndFireOneFrame(uint rate)
 	{
 		DispatcherProvider.SetCurrent(new ImmediateDispatcherProvider());
